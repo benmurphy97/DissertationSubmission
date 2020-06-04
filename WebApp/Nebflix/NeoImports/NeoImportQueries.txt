@@ -1,0 +1,39 @@
+# Below lines work
+
+# Create Movie nodes
+LOAD CSV WITH HEADERS FROM 'file:///desktop-csv-import/moviesFiltered.csv' AS line
+CREATE (:Movie { movieId: toInteger(line.movieId)})
+
+# Create User nodes
+LOAD CSV WITH HEADERS FROM 'file:///desktop-csv-import/usersFiltered.csv' AS line
+CREATE (:User { userId: toInteger(line.userId)})
+
+# Create Clusters nodes
+LOAD CSV WITH HEADERS FROM 'file:///desktop-csv-import/clusterNumber.csv' AS line
+CREATE (:Cluster { clusterId: toInteger(line.clusterNumber), averageRatings: toFloat(line.avg_ratings)})
+
+CREATE CONSTRAINT ON (m:Movie) ASSERT m.movieId IS UNIQUE
+CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE
+
+# Create Relationships 
+// had to change the memory neo4j was using, that worked
+
+# between user and movie
+LOAD CSV WITH HEADERS FROM 'file:///desktop-csv-import/ratingsFiltered.csv' AS line
+MATCH (u:User {userId: toInteger(line.userId)}), (m:Movie {movieId: toInteger(line.movieId)})
+CREATE (u)-[r:Rated {value: toInteger(line.rating)}]->(m)
+
+# between cluster and movie
+LOAD CSV WITH HEADERS FROM 'file:///desktop-csv-import/clusterItems.csv' AS line
+MATCH (c:Cluster {clusterId: toInteger(line.clusterNumber)}), (m:Movie {movieId: toInteger(line.movieId)})
+CREATE (m)-[r:isMemberOf]->(c)
+
+# between movie and movie in clusters
+LOAD CSV WITH HEADERS FROM 'file:///desktop-csv-import/clusterItemRelationships.csv' AS line
+MATCH (m1:Movie {movieId: toInteger(line.MovieIdFrom)}), (m2:Movie {movieId: toInteger(line.MovieIdTo)})
+CREATE (m1)-[:ConnectedTo {similarity: toFloat(line.Value)}]->(m2)
+
+
+create (u:User{ name: "Ben"})
+
+

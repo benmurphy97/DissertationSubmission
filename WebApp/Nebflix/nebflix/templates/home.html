@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block content %}
+  
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script type=text/javascript>
+        $(function() {
+          $('a#prepare').bind('click', function() {
+            $.getJSON('/create_Clustered_Item_relationships',
+                function(data) {
+              //do nothing
+            });
+            return false;
+          });
+        });
+</script>
+
+<h1>Please press the button below before beginning the algorithm</h1>
+
+<div class='container'>
+        <form>
+            <a href=# id=prepare><button class='btn btn-default'>Prepare Algorithm</button></a>
+        </form>
+</div>
+{% endblock content %}

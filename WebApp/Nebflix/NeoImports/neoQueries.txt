@@ -1,0 +1,180 @@
+MATCH (u1:User {userId: 31})-[:RATED]->(movie1)
+WITH u1, collect(id(movie1)) AS movieId1
+MATCH (u2:User)-[:RATED]->(movie2) WHERE u1 <> u2
+WITH u1, movieId1, u2, collect(id(movie2)) AS movieId2
+RETURN u1.userId AS from,
+       u2.userId AS to,
+       algo.similarity.jaccard(movieId1, movieId2) AS similarity
+ORDER BY similarity DESC
+LIMIT 10
+
+// below works and is faster than above
+
+MATCH (user:User)-[:RATED]->(movie)
+WITH {item:id(user), userId: user.userId, categories: collect(id(movie))} as data
+WITH collect(data) AS userMovies
+
+// create sourceIds list containing ids for user 31
+WITH userMovies,
+     [value in userMovies WHERE value.userId = 31 | value.item ] AS sourceIds
+
+CALL algo.similarity.jaccard.stream(userMovies, {sourceIds: sourceIds, topK: 10})
+YIELD item1, item2, similarity
+WITH algo.getNodeById(item1) AS from, algo.getNodeById(item2) AS to, similarity
+RETURN from.userId AS from, to.userId AS to, similarity
+ORDER BY similarity DESC
+
+***
+
+# get most densely similar node in a cluster
+Match (m:Movie)<-[r:ConnectedTo]-(:Movie)
+Where (m)-[:isMemberOf]-(:Cluster{clusterId:236})
+Return m.movieId,avg(r.similarity)
+Order by avg(r.similarity) DESC
+
+
+
+Algorithm building
+
+//////
+// returns all movies in a cluster, and the relationships between them and a user
+match (u:User {name:"Ben"})-[r:RATED]-(m:Movie)-
+[t:ConnectedTo]-(ms:Movie)-[i:isMemberOf]-(c:Cluster)
+return u,r,m,ms,i,t,c
+
+
+//
+match (u:User {name:"Ben"})-[r:RATED]-(m:Movie)
+match (ms:Movie)-[t:ConnectedTo]-(m)
+match (m)-[i:isMemberOf]-(c:Cluster)
+return r.value, t.similarity, ms.movieId
+
+returns below
+r.value	t.similarity	ms.movieId
+5	    0.9832	        3114
+5	    0.9575	        78499
+
+//
+/ get similarity between other nodes in cluster apart from one node
+match (u:User {name:"Ben"})-[r:RATED]-(m:Movie)
+match (ms:Movie)-[t:ConnectedTo]-(m)
+
+WITH COLLECT(ms) AS movies
+
+UNWIND range(0,size(movies)) AS i  
+with movies[i] as m1, movies[i+1] as m2
+match (m1)-[val:ConnectedTo]-(m2)
+return val.similarity, m1.movieId, m2.movieId
+//
+
+
+
+// 
+/ below creates potential relationship between nodes in the cluster and to the user based on rating given to other movie
+match (u:User {name:"Ben"})-[r:RATED]-(m:Movie)
+match (ms:Movie)-[t:ConnectedTo]-(m)
+match (m)-[i:isMemberOf]-(c:Cluster)
+
+create (u)-[p:Potential{value:r.value*t.similarity}]->(ms)
+return u,r,m,ms,i,c,p
+//
+
+
+
+//////
+// get similarity between other nodes in given cluster
+
+match (c:Cluster {clusterId:138})-[imo:isMemberOf]-(m:Movie)
+match (ms:Movie)-[t:ConnectedTo]-(m)
+
+WITH COLLECT(ms) AS movies
+
+UNWIND range(0,size(movies)) AS i  
+with movies[i] as m1, movies[i+1] as m2
+match (m1)-[val:ConnectedTo]-(m2)
+return val.similarity, m1.movieId, m2.movieId
+//
+
+
+///////
+match (u:User {name:"Ben"})-[r:RATED]-(m:Movie)
+match (ms:Movie)-[t:ConnectedTo]-(m)
+match (m)-[i:isMemberOf]-(c:Cluster)
+return m.movieId,r.value*t.similarity/2.5,ms.movieId
+
+returns updated weight relationships coming from the movie
+//////
+
+
+
+**** set average user ratings per movies in cluster value in each cluster
+match (c:Cluster)-[i:isMemberOf]-(ms:Movie)
+with size((:User)-[:Rated]-(ms)) as listRelsPerNode, 
+	count((:User)-[: Rated]-(ms)) as nodesInCLuster,
+    c.clusterId as cid
+with sum(listRelsPerNode)/sum(nodesInCLuster) as arpc, cid as cid
+MATCH (n:Cluster { clusterId: cid })
+SET n.averageRatings = arpc
+****
+
+
+**** delete potentials related to a user
+match (u:User {name:"Ben"})-[r:Potential]-(ms:Movie)
+delete r
+****
+
+**** delete rated connected to a user
+match (u:User {name:"Ben"})-[r:Potential]-(ms:Movie)
+delete r
+****
+
+**** get most similar movie in a cluster
+match (c:Cluster{clusterId:59})-[i:isMemberOf]-(m:Movie)-[r:ConnectedTo]-()
+return m.movieId,avg(r.similarity)
+order by avg(r.similarity) desc limit 1
+****
+
+
+****
+match (u:User {name:"Ben"})
+match (m:Movie)-[:isMemberOf]-(c:Cluster{clusterId:59})
+with m,c,u,size(()-[:RATED]-(m)) as userCount
+with m,c,u,userCount, order by userCount desc limit 1
+create (u)-[p:Potential{avgUserRatingsPerMovie:c.averageRatings}]-(m)
+
+return m.movieId, userCount, c.averageRatings
+****
+
+**** avg algo in movie
+match (u:User {name:"Ben"})
+match (m:Movie{movieId:1210})-[con:ConnectedTo]-(ms:Movie)
+with u,ms,m,con
+optional match (u)-[rate:RATED]-(ms)
+with u,avg(COALESCE(rate.value, 1) * con.similarity) as value,m
+create (u)-[p:Potential{ratings:value}]->(m)
+
+
+**** for a given movie, create potential rel with all othwr movies in cluster
+match (u:User {name:"Ben"})
+match (:Movie{movieId:260})-[:ConnectedTo]-(ms:Movie)
+unwind ms.movieId as targetMovieId
+
+match (m:Movie{movieId:targetMovieId})-[con:ConnectedTo]-(movies:Movie)
+with u,movies as ms,m,con
+optional match (u)-[rate:RATED]-(ms)
+with u,avg(COALESCE(rate.value, 1) * con.similarity) as value,m
+create (u)-[p:Potential{ratings:value}]->(m)
+
+
+
+
+match (u:User {name:"Ben"})
+match (:Movie{movieId: 3114})-[:ConnectedTo]-(ms:Movie)
+unwind ms.movieId as targetMovieId
+match (m:Movie{movieId:targetMovieId})-[con:ConnectedTo]-(movies:Movie)
+where not (u)-[:RATED]-(m)
+with u, movies as movies, m, con
+optional match (u)-[rate:RATED]-(movies)
+with u,avg(COALESCE(rate.value, 1) * con.similarity) as value, m
+match (u)-[p:Potential]-(m)
+set p.ratings = value

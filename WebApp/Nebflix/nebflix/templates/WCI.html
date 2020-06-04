@@ -1,0 +1,160 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<style>
+.movie-title {
+  color: #061304;
+}
+
+.movie-area {
+  background: #e8d8f5;
+  padding: 20px 20px;
+  border: 1px solid #0a0909;
+  border-radius: 10;
+  height: 280px;
+}
+
+#leftbox { 
+    float:left;  
+    background:rgba(255, 255, 255, 0); 
+    width:30%; 
+    padding: 10px 10px;
+    height:10%; 
+} 
+
+#middlebox{ 
+    float:left;  
+    word-wrap: break-word;
+    width:35%; 
+    height:50%; 
+} 
+
+#rightbox{ 
+    float:right; 
+    background:rgba(0, 0, 255, 0); 
+    padding: 20px;
+    width:25%; 
+    height:90%; 
+} 
+
+h1 h2,h6{
+  color:rgb(5, 18, 5);
+}
+
+img {
+    max-width: 180px;
+    max-height: 220px;
+    vertical-align: middle;
+
+}
+select{
+  display: block;
+  margin: 0 auto;
+}
+
+#nextpage {
+    width: 150px;  height: 140;
+}
+</style>
+
+<h1>Welcome!</h1>
+<br>
+<h2>Please select a rating if you have seen the movie</h2>
+<br>
+  <form method="POST" action="{{ url_for('algo_rate_potential') }}", id="foo">
+  <div class="movie-area">
+    <fieldset class="form-group">
+      <div id="leftbox">
+        <img  src="{{ movie0.image_link }}"/>
+      </div>
+      <div id="middlebox">
+        <h2 class ="movie-title">{{ movie0.title }} </h2>
+        <h6> Directed by: {{ movie0.director }} </h6>
+        <input type="hidden" id="movie0Id" name="movie0Id" value="{{ movie0.movieId }}">  
+        <input type="hidden" id="movie0type" name="movie0type" value="{{ movie0.algo_type }}">             
+      </div>
+      <div id="rightbox">
+            <select size="6" id="movieRating0" name="rating0">
+            <option value="0" selected="selected">Haven't Seen it</option>
+            <option value="5">5</option>
+            <option value="4">4</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+            <option value="1">1</option>
+          </select>
+        </div>
+    </fieldset>
+  </div>
+  <div class="movie-area">
+    <fieldset class="form-group">
+      <div id="leftbox">
+        <img  src="{{ movie1.image_link }}"/>
+      </div>
+      <div id="middlebox">
+        <h2 class ="movie-title">{{ movie1.title }} </h2>
+        <h6> Directed by: {{ movie1.director }} </h6>
+        <input type="hidden" id="movie1Id" name="movie1Id" value="{{ movie1.movieId }}">  
+        <input type="hidden" id="movie1type" name="movie1type" value="{{ movie1.algo_type }}">             
+      </div>
+      <div id="rightbox">
+            <select size="6" id="movieRating1" name="rating1">
+            <option value="0" selected="selected">Haven't Seen it</option>
+            <option value="5">5</option>
+            <option value="4">4</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+            <option value="1">1</option>
+          </select>
+        </div>
+    </fieldset>
+  </div>
+  <div class="movie-area">
+    <fieldset class="form-group">
+      <div id="leftbox">
+        <img  src="{{ movie2.image_link }}"/>
+      </div>
+      <div id="middlebox">
+        <h2 class ="movie-title">{{ movie2.title }} </h2>
+        <h6> Directed by: {{ movie2.director }} </h6>
+        <input type="hidden" id="movie2Id" name="movie2Id" value="{{ movie2.movieId }}">  
+        <input type="hidden" id="movie2type" name="movie2type" value="{{ movie2.algo_type }}">             
+      </div>
+      <div id="rightbox">
+            <select size="6" id="movieRating2" name="rating2">
+            <option value="0" selected="selected">Haven't Seen it</option>
+            <option value="5">5</option>
+            <option value="4">4</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+            <option value="1">1</option>
+          </select>
+        </div>
+    </fieldset>
+  </div>
+  <div class="movie-area">
+    <fieldset class="form-group">
+      <div id="leftbox">
+          <img  src="{{ movie3.image_link }}"/>
+      </div>
+      <div id="middlebox">
+        <h2 class ="movie-title">{{ movie3.title }} </h2>
+        <h6> Directed by: {{ movie3.director }} </h6>
+        <input type="hidden" id="movie3Id" name="movie3Id" value="{{ movie3.movieId }}">  
+        <input type="hidden" id="movie3type" name="movie3type" value="{{ movie3.algo_type }}">             
+      </div>
+      <div id="rightbox">
+            <select size="6" id="movieRating3" name="rating3">
+            <option value="0" selected="selected">Haven't Seen it</option>
+            <option value="5">5</option>
+            <option value="4">4</option>
+            <option value="3">3</option>
+            <option value="2">2</option>
+            <option value="1">1</option>
+          </select>
+        </div>
+    </fieldset>
+  </div>
+    <input type="submit" value="Next" id="nextpage">
+  </form>
+{% endblock content %}
